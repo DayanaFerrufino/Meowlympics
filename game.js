@@ -742,3 +742,48 @@ function showGameOverUI() {
     this,
   );
 }
+
+// ─── ML ───────────────────────────────────────────────────────────────────────
+
+var mlModeActive = false;
+
+function getObservation() {
+  var sorted = hazards
+    .getChildren()
+    .filter(function (h) {
+      return h.active;
+    })
+    .sort(function (a, b) {
+      return a.x - b.x;
+    });
+
+  var obs = [
+    player.y / 650,
+    player.body.velocity.y / 2000,
+    jumpsLeft / MAX_JUMPS,
+    currentHazardSpeed / MAX_HAZARD_SPEED,
+  ];
+
+  for (var i = 0; i < 3; i++) {
+    if (i < sorted.length) {
+      obs.push(sorted[i].x / 1200);
+      obs.push((sorted[i].displayHeight || 60) / 200);
+    } else {
+      obs.push(1.0);
+      obs.push(0.0);
+    }
+  }
+  return obs;
+}
+
+// Stub - will replace with real model inference once weights are trained.
+// 0 = nothing  1 = jump  2 = left  3 = right
+function mlGetAction(obs) {
+  var nearestHazardX = obs[4];
+  var playerVy = obs[1];
+  var jumpsRemaining = obs[2];
+  if (nearestHazardX < 0.25 && jumpsRemaining > 0 && playerVy >= 0) {
+    return 1;
+  }
+  return 0;
+}
