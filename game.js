@@ -170,33 +170,103 @@ function createStartScreen() {
   );
 
   startButton.on("pointerdown", startGame, this);
+
+  // ── ML mode toggle ──────────────────────────────────────────────────────
+  this.mlToggleBg = this.add
+    .rectangle(600, 370, 220, 44, 0x000000, 0.35)
+    .setDepth(10)
+    .setOrigin(0.5);
+  this.mlToggleBg.setStrokeStyle(1, 0xffffff, 0.15);
+
+  this.mlToggleLabel = this.add
+    .text(510, 370, "ML mode", {
+      fontSize: "20px",
+      fill: "#ffffffcc",
+      fontFamily: "VT323, sans-serif",
+    })
+    .setOrigin(0, 0.5)
+    .setDepth(11);
+
+  var trackX = 622;
+  this.mlTrack = this.add
+    .rectangle(trackX, 370, 52, 26, 0x555555)
+    .setDepth(11)
+    .setOrigin(0.5);
+
+  this.mlThumb = this.add.circle(trackX - 13, 370, 11, 0xaaaaaa).setDepth(12);
+
+  this.mlStatusLabel = this.add
+    .text(688, 370, "OFF", {
+      fontSize: "20px",
+      fill: "#ffffff66",
+      fontFamily: "VT323, sans-serif",
+    })
+    .setOrigin(0, 0.5)
+    .setDepth(11);
+
+  var toggleML = function () {
+    mlModeActive = !mlModeActive;
+    updateToggleVisual.call(this);
+  };
+
+  this.mlToggleBg.setInteractive({ useHandCursor: true });
+  this.mlTrack.setInteractive({ useHandCursor: true });
+  this.mlThumb.setInteractive({ useHandCursor: true });
+  this.mlToggleBg.on("pointerdown", toggleML, this);
+  this.mlTrack.on("pointerdown", toggleML, this);
+  this.mlThumb.on("pointerdown", toggleML, this);
+
+  updateToggleVisual.call(this);
+
+  // Push start button down to make room
+  startButton.setY(440);
+}
+
+function updateToggleVisual() {
+  var trackX = 622;
+  if (mlModeActive) {
+    this.mlTrack.setFillStyle(0x4c8a46);
+    this.mlThumb.setFillStyle(0xffffff);
+    this.tweens.add({
+      targets: this.mlThumb,
+      x: trackX + 13,
+      duration: 150,
+      ease: "Power2",
+    });
+    this.mlStatusLabel.setText("ON").setStyle({ fill: "#aaffaa" });
+    controlsHint.setText("ML agent is driving   |   sit back and watch");
+  } else {
+    this.mlTrack.setFillStyle(0x555555);
+    this.mlThumb.setFillStyle(0xaaaaaa);
+    this.tweens.add({
+      targets: this.mlThumb,
+      x: trackX - 13,
+      duration: 150,
+      ease: "Power2",
+    });
+    this.mlStatusLabel.setText("OFF").setStyle({ fill: "#ffffff66" });
+    controlsHint.setText("UP or SPACE to jump   |   LEFT / RIGHT to move");
+  }
 }
 
 // ─── START GAME (shows countdown first) ───────────────────────────────────────
-
 function startGame() {
-  // Tear down start screen — destroy only the known start screen elements,
-  // NOT a blanket forEach that would also wipe timeText / highScoreText
-  if (startButton) {
-    startButton.destroy();
-    startButton = null;
-  }
-  if (startText) {
-    startText.destroy();
-    startText = null;
-  }
-  if (titleText) {
-    titleText.destroy();
-    titleText = null;
-  }
-  if (titleShadow) {
-    titleShadow.destroy();
-    titleShadow = null;
-  }
-  if (controlsHint) {
-    controlsHint.destroy();
-    controlsHint = null;
-  }
+  var toDestroy = [
+    startButton,
+    startText,
+    titleText,
+    titleShadow,
+    controlsHint,
+    this.mlToggleBg,
+    this.mlToggleLabel,
+    this.mlTrack,
+    this.mlThumb,
+    this.mlStatusLabel,
+  ];
+  toDestroy.forEach(function (el) {
+    if (el) el.destroy();
+  });
+  startButton = startText = titleText = titleShadow = controlsHint = null;
 
   // Show HUD now so it's visible during countdown
   this.timeText.setVisible(true);
