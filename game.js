@@ -274,6 +274,19 @@ function startGame() {
   this.hudGfx.setVisible(true);
   this.jumpPipContainer.setVisible(true);
 
+  this.modeBadge = this.add
+    .text(600, 14, mlModeActive ? "ML agent" : "player", {
+      fontSize: "18px",
+      fill: mlModeActive ? "#aaffaa" : "#FFD700",
+      fontFamily: "VT323, sans-serif",
+      backgroundColor: "#00000055",
+      padding: { x: 10, y: 4 },
+    })
+    .setOrigin(0.5, 0)
+    .setDepth(20);
+
+  runCountdown.call(this);
+
   runCountdown.call(this);
 }
 
@@ -501,34 +514,59 @@ function update() {
   if (!this.gameRunning || isDead) return;
 
   // ── Movement ──
-  var isOnGround = player.body.touching.down;
-  if (cursors.left.isDown) {
-    player.setVelocityX(-500);
-    player.anims.play("left", true);
-  } else if (cursors.right.isDown) {
-    player.setVelocityX(500);
-    player.anims.play("right", true);
+  if (mlModeActive) {
+    var obs = getObservation();
+    var action = mlGetAction(obs);
+
+    if (action === 1 && jumpsLeft > 0) {
+      player.setVelocityY(-900);
+      jumpsLeft--;
+      if (this.jumpRotateTween) this.jumpRotateTween.stop();
+      player.setAngle(0);
+      this.jumpRotateTween = this.tweens.add({
+        targets: player,
+        angle: 360,
+        duration: 500,
+        ease: "Sine.easeOut",
+      });
+    } else if (action === 2) {
+      player.setVelocityX(-500);
+      player.anims.play("left", true);
+    } else if (action === 3) {
+      player.setVelocityX(500);
+      player.anims.play("right", true);
+    } else {
+      player.setVelocityX(0);
+      player.anims.play("turn");
+    }
   } else {
-    player.setVelocityX(0);
-    player.anims.play("turn");
-  }
+    var isOnGround = player.body.touching.down;
+    if (cursors.left.isDown) {
+      player.setVelocityX(-500);
+      player.anims.play("left", true);
+    } else if (cursors.right.isDown) {
+      player.setVelocityX(500);
+      player.anims.play("right", true);
+    } else {
+      player.setVelocityX(0);
+      player.anims.play("turn");
+    }
 
-  // ── Double jump with spin ──
-  var jumpPressed =
-    Phaser.Input.Keyboard.JustDown(cursors.up) ||
-    Phaser.Input.Keyboard.JustDown(this.spaceKey);
-  if (jumpPressed && jumpsLeft > 0) {
-    player.setVelocityY(-900);
-    jumpsLeft--;
-
-    if (this.jumpRotateTween) this.jumpRotateTween.stop();
-    player.setAngle(0);
-    this.jumpRotateTween = this.tweens.add({
-      targets: player,
-      angle: 360,
-      duration: 500,
-      ease: "Sine.easeOut",
-    });
+    var jumpPressed =
+      Phaser.Input.Keyboard.JustDown(cursors.up) ||
+      Phaser.Input.Keyboard.JustDown(this.spaceKey);
+    if (jumpPressed && jumpsLeft > 0) {
+      player.setVelocityY(-900);
+      jumpsLeft--;
+      if (this.jumpRotateTween) this.jumpRotateTween.stop();
+      player.setAngle(0);
+      this.jumpRotateTween = this.tweens.add({
+        targets: player,
+        angle: 360,
+        duration: 500,
+        ease: "Sine.easeOut",
+      });
+    }
   }
 
   // ── Timer ──
